@@ -185,50 +185,51 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    // ——— Utilities ———
-    const el = id => document.getElementById(id)
-    const fmt = n => new Intl.NumberFormat().format(n)
-    const nowStr = () => new Date().toLocaleString()
 
-    // Unicode-aware word split (letters/numbers + internal apostrophes/hyphens)
-    const WORD_RE = /[\p{L}\p{N}]+(?:[\-'’][\p{L}\p{N}]+)*/gu
-    const LETTER_RE = /\p{L}/gu
-    const DIGIT_RE = /\p{N}/gu
-    const PUNCT_RE = /[\p{P}]/gu
-    const SYMBOL_RE = /[\p{S}]/gu
+    <script>
+        // ——— Utilities ———
+        const el = id => document.getElementById(id)
+        const fmt = n => new Intl.NumberFormat().format(n)
+        const nowStr = () => new Date().toLocaleString()
 
-    function graphemesOf(str){
+        // Unicode-aware word split (letters/numbers + internal apostrophes/hyphens)
+        const WORD_RE = /[\p{L}\p{N}]+(?:[\-''][\p{L}\p{N}]+)*/gu
+        const LETTER_RE = /\p{L}/gu
+        const DIGIT_RE = /\p{N}/gu
+        const PUNCT_RE = /\p{P}/gu
+        const SYMBOL_RE = /\p{S}/gu
+
+        function graphemesOf(str){
         if (typeof Intl !== 'undefined' && Intl.Segmenter){
-            const seg = new Intl.Segmenter(undefined, {granularity:'grapheme'})
-            return Array.from(seg.segment(str), s => s.segment)
-        }
+        const seg = new Intl.Segmenter(undefined, {granularity:'grapheme'})
+        return Array.from(seg.segment(str), s => s.segment)
+    }
         // basic fallback (may split some complex emoji):
         return Array.from(str)
     }
 
-    function sentencesOf(str){
+        function sentencesOf(str){
         // Heuristic sentence splitter; avoids splitting on common abbreviations
         const abbr = /(e\.g\.|i\.e\.|mr\.|mrs\.|dr\.|vs\.|etc\.|u\.s\.)/i
         return str
-            .replace(/([?!\.]+)(\s+)(?=[A-ZА-ЯЁÑÖÜÍÁÉÍÓÚÄÔİ])(?!(?:[^]*?\()))/g, '$1\n')
-            .split(/\n+/)
-            .map(s => s.trim())
-            .filter(s => s.length && !abbr.test(s))
+        .replace(/([?!\.]+)(\s+)(?=[A-ZА-ЯЁÑÖÜÍÁÉÍÓÚÄÔİ])(?!(?:[^]*?\()))/g, '$1\n')
+        .split(/\n+/)
+        .map(s => s.trim())
+        .filter(s => s.length && !abbr.test(s))
     }
 
-    function paragraphsOf(str){
+        function paragraphsOf(str){
         return str.split(/\n{2,}/).map(p => p.trim()).filter(Boolean)
     }
 
-    function median(arr){
+        function median(arr){
         if(!arr.length) return 0
         const s = [...arr].sort((a,b)=>a-b)
         const mid = Math.floor(s.length/2)
         return s.length % 2 ? s[mid] : (s[mid-1]+s[mid])/2
     }
 
-    function syllableEstimate(word){
+        function syllableEstimate(word){
         // Very rough English heuristic for syllables (for Flesch score)
         if(!word) return 0
         const w = word.toLowerCase()
@@ -236,22 +237,22 @@
         return Math.max(1, m ? m.length : 0)
     }
 
-    function detectLanguageLite(text){
+        function detectLanguageLite(text){
         // Simple guess: look at script usage
         const scripts = {
-            Bengali: /[\u0980-\u09FF]/,
-            Latin: /[A-Za-z]/,
-            Cyrillic: /[\u0400-\u04FF]/,
-            Arabic: /[\u0600-\u06FF]/,
-            Devanagari: /[\u0900-\u097F]/
-        }
+        Bengali: /[\u0980-\u09FF]/,
+        Latin: /[A-Za-z]/,
+        Cyrillic: /[\u0400-\u04FF]/,
+        Arabic: /[\u0600-\u06FF]/,
+        Devanagari: /[\u0900-\u097F]/
+    }
         for (const [name, re] of Object.entries(scripts)){
-            if (re.test(text)) return name
-        }
+        if (re.test(text)) return name
+    }
         return text.trim() ? 'Unknown' : 'n/a'
     }
 
-    function humanBytes(n){
+        function humanBytes(n){
         if (n < 1024) return `${n} B`
         const units = ['KB','MB','GB']
         let u = -1
@@ -259,10 +260,10 @@
         return `${n.toFixed(2)} ${units[u]}`
     }
 
-    // ——— Main analyzer ———
-    const input = el('input')
+        // ——— Main analyzer ———
+        const input = el('input')
 
-    function analyze(){
+        function analyze(){
         const text = input.value
         const lines = text.split(/\n/)
         const words = text.match(WORD_RE) || []
@@ -296,17 +297,17 @@
         // Frequency (top 10)
         const freq = new Map()
         for(const w of words){
-            const key = w.toLowerCase()
-            freq.set(key, (freq.get(key)||0)+1)
-        }
+        const key = w.toLowerCase()
+        freq.set(key, (freq.get(key)||0)+1)
+    }
         const top = [...freq.entries()].sort((a,b)=> b[1]-a[1]).slice(0,10)
 
         // Syllables + Flesch (English heuristic)
         const syllables = words.reduce((sum, w)=> sum + syllableEstimate(w), 0)
         const sentCount = Math.max(1, sentences.length) // avoid div/0
         const flesch = words.length && sentences.length
-            ? (206.835 - 1.015 * (words.length / sentCount) - 84.6 * (syllables / words.length))
-            : null
+        ? (206.835 - 1.015 * (words.length / sentCount) - 84.6 * (syllables / words.length))
+        : null
 
         // Update UI
         el('chars').textContent = fmt(text.length)
@@ -344,10 +345,10 @@
         const list = el('freqList')
         list.innerHTML = ''
         top.forEach(([w,c])=>{
-            const li = document.createElement('li')
-            li.innerHTML = `<code>${w}</code><span class="badge text-bg-secondary badge-min">${fmt(c)}</span>`
-            list.appendChild(li)
-        })
+        const li = document.createElement('li')
+        li.innerHTML = `<code>${w}</code><span class="badge text-bg-secondary badge-min">${fmt(c)}</span>`
+        list.appendChild(li)
+    })
 
         // Word length distribution as stacked progress
         const dist = {}
@@ -359,17 +360,21 @@
         const legend = el('wordLenLegend')
         legend.innerHTML = ''
         entries.forEach(([len,count], idx)=>{
-            const pct = Math.max(0.5, (count/total)*100)
-            const div = document.createElement('div')
-            div.className = `progress-bar` // let Bootstrap pick colors automatically per theme
-            div.style.width = pct + '%'
-            div.title = `${count} words of length ${len}`
-            progress.appendChild(div)
-            const li = document.createElement('li')
-            li.className = 'list-inline-item monosmall'
-            li.textContent = `${len}: ${fmt(count)}`
-            legend.appendChild(li)
-        })
+        const pct = Math.max(0.5, (count/total)*100)
+        const div = document.createElement('div')
+        div.className = `progress-bar bg-${idx % 6 === 0 ? 'primary' :
+        idx % 6 === 1 ? 'success' :
+        idx % 6 === 2 ? 'info' :
+        idx % 6 === 3 ? 'warning' :
+        idx % 6 === 4 ? 'danger' : 'secondary'}`
+        div.style.width = pct + '%'
+        div.title = `${count} words of length ${len}`
+        progress.appendChild(div)
+        const li = document.createElement('li')
+        li.className = 'list-inline-item monosmall'
+        li.textContent = `${len}: ${fmt(count)}`
+        legend.appendChild(li)
+    })
 
         // Language guess
         el('langGuess').textContent = detectLanguageLite(text)
@@ -382,7 +387,7 @@
         updateCursorPos()
     }
 
-    function updateCursorPos(){
+        function updateCursorPos(){
         const pos = input.selectionStart || 0
         const till = input.value.slice(0, pos)
         const line = (till.match(/\n/g)||[]).length + 1
@@ -390,17 +395,23 @@
         el('cursorPos').textContent = `Ln ${line}, Col ${col}`
     }
 
-    // ——— Actions & Keyboard ———
-    function copyToClipboard(){
-        input.select(); document.execCommand('copy');
-        window.getSelection().removeAllRanges()
+        // ——— Actions & Keyboard ———
+        function copyToClipboard(){
+        input.select()
+        navigator.clipboard.writeText(input.value).then(() => {
         flash('Copied to clipboard')
+    }).catch(() => {
+        // Fallback for older browsers
+        document.execCommand('copy')
+        flash('Copied to clipboard')
+    })
+        window.getSelection().removeAllRanges()
     }
 
-    function flash(msg){
+        function flash(msg){
         const toast = document.createElement('div')
         toast.className = 'toast align-items-center text-bg-success border-0 position-fixed top-0 start-50 translate-middle-x mt-3 z-3'
-        toast.role = 'status'
+        toast.setAttribute('role', 'alert')
         toast.innerHTML = `<div class="d-flex"><div class="toast-body">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`
         document.body.appendChild(toast)
         const t = new bootstrap.Toast(toast, { delay: 1500 })
@@ -408,7 +419,7 @@
         toast.addEventListener('hidden.bs.toast', ()=> toast.remove())
     }
 
-    function exportJSON(){
+        function exportJSON(){
         const data = collectAll()
         const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'})
         const url = URL.createObjectURL(blob)
@@ -419,14 +430,14 @@
         URL.revokeObjectURL(url)
     }
 
-    function csvFromObjectArray(rows){
+        function csvFromObjectArray(rows){
         if (!rows.length) return ''
         const keys = Object.keys(rows[0])
         const esc = v => '"'+String(v).replace(/"/g,'""')+'"'
         return [keys.join(','), ...rows.map(r=> keys.map(k=>esc(r[k])).join(','))].join('\n')
     }
 
-    function downloadWordLenCSV(){
+        function downloadWordLenCSV(){
         const text = input.value
         const words = text.match(WORD_RE) || []
         const wordLens = words.map(w => [...w].length)
@@ -440,87 +451,116 @@
         a.href = url; a.download = 'word-length-distribution.csv'; a.click(); URL.revokeObjectURL(url)
     }
 
-    function collectAll(){
+        function collectAll(){
         const text = input.value
         const lines = text.split(/\n/)
         const words = text.match(WORD_RE) || []
         const graphemes = graphemesOf(text)
         return {
-            chars: text.length,
-            words: words.length,
-            lines: lines.length,
-            graphemes: graphemes.length,
-            sentences: sentencesOf(text).length,
-            paragraphs: paragraphsOf(text).length,
-            byteSize: new Blob([text]).size,
-            letters: (text.match(LETTER_RE)||[]).length,
-            digits: (text.match(DIGIT_RE)||[]).length,
-            punctuation: (text.match(PUNCT_RE)||[]).length,
-            symbols: (text.match(SYMBOL_RE)||[]).length,
-            spaces: (text.match(/ /g)||[]).length,
-            tabs: (text.match(/\t/g)||[]).length,
-            newlines: lines.length-1,
-            ascii: (text.match(/[\x00-\x7F]/g)||[]).length,
-            languageGuess: detectLanguageLite(text),
-            sample: text.slice(0, 120)
-        }
+        chars: text.length,
+        words: words.length,
+        lines: lines.length,
+        graphemes: graphemes.length,
+        sentences: sentencesOf(text).length,
+        paragraphs: paragraphsOf(text).length,
+        byteSize: new Blob([text]).size,
+        letters: (text.match(LETTER_RE)||[]).length,
+        digits: (text.match(DIGIT_RE)||[]).length,
+        punctuation: (text.match(PUNCT_RE)||[]).length,
+        symbols: (text.match(SYMBOL_RE)||[]).length,
+        spaces: (text.match(/ /g)||[]).length,
+        tabs: (text.match(/\t/g)||[]).length,
+        newlines: lines.length-1,
+        ascii: (text.match(/[\x00-\x7F]/g)||[]).length,
+        languageGuess: detectLanguageLite(text),
+        sample: text.slice(0, 120)
+    }
     }
 
-    function importFile(file){
+        function importFile(file){
         const reader = new FileReader()
-        reader.onload = e => { input.value = e.target.result; analyze(); flash('File imported') }
+        reader.onload = e => {
+        input.value = e.target.result;
+        analyze();
+        flash('File imported')
+    }
         reader.readAsText(file)
     }
 
-    // ——— Theme ———
-    function setTheme(mode){
-        document.documentElement.setAttribute('data-bs-theme', mode === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches? 'dark':'light') : mode)
+        // ——— Theme ———
+        function setTheme(mode){
+        document.documentElement.setAttribute('data-bs-theme', mode === 'auto' ?
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : mode)
         localStorage.setItem('textAnalyzer.theme', mode)
     }
 
-    // ——— Event wiring ———
-    input.addEventListener('input', analyze)
-    input.addEventListener('keyup', updateCursorPos)
-    input.addEventListener('click', updateCursorPos)
+        // ——— Event wiring ———
+        window.addEventListener('DOMContentLoaded', () => {
+        input.addEventListener('input', analyze)
+        input.addEventListener('keyup', updateCursorPos)
+        input.addEventListener('click', updateCursorPos)
 
-    el('clearBtn').addEventListener('click', ()=>{ input.value=''; analyze(); flash('Cleared') })
-    el('copyBtn').addEventListener('click', copyToClipboard)
-    el('sampleBtn').addEventListener('click', ()=>{
+        el('clearBtn').addEventListener('click', ()=>{
+        input.value = '';
+        analyze();
+        flash('Cleared')
+    })
+
+        el('copyBtn').addEventListener('click', copyToClipboard)
+
+        el('sampleBtn').addEventListener('click', ()=>{
         input.value = `Bootstrap-powered, privacy-friendly text analyzer.\n\n• Counts: characters, words, lines, sentences, paragraphs, graphemes (emoji-safe).\n• Breakdown: letters, digits, punctuation, symbols, spaces, tabs, newlines, ASCII.\n• Extras: reading time, byte size, averages, medians, word-length distribution, top words.\n\nবাংলা, العربية, русский — mixed scripts supported (basic heuristics).`
         analyze()
     })
 
-    el('csvBtn').addEventListener('click', downloadWordLenCSV)
-    el('exportBtn').addEventListener('click', exportJSON)
+        el('csvBtn').addEventListener('click', downloadWordLenCSV)
+        el('exportBtn').addEventListener('click', exportJSON)
 
-    el('fileInput').addEventListener('change', (e)=>{
+        el('fileInput').addEventListener('change', (e)=>{
         const [file] = e.target.files
         if(file) importFile(file)
         e.target.value = ''
     })
 
-    document.querySelectorAll('[data-color-mode]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{ setTheme(btn.getAttribute('data-color-mode')) })
+        document.querySelectorAll('[data-color-mode]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+        setTheme(btn.getAttribute('data-color-mode'))
+    })
     })
 
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e)=>{
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e)=>{
         const cmd = e.ctrlKey || e.metaKey
-        if (cmd && e.key.toLowerCase()==='b'){ e.preventDefault(); const cur = localStorage.getItem('textAnalyzer.theme') || 'dark'; setTheme(cur==='dark'?'light':'dark') }
-        if (cmd && e.key.toLowerCase()==='l'){ e.preventDefault(); input.value=''; analyze() }
-        if (cmd && e.key.toLowerCase()==='s'){ e.preventDefault(); exportJSON() }
-        if (cmd && e.key === 'Enter'){ e.preventDefault(); const start = input.selectionStart; input.setRangeText('\n', start, start, 'end'); analyze() }
+        if (cmd && e.key.toLowerCase()==='b'){
+        e.preventDefault();
+        const cur = localStorage.getItem('textAnalyzer.theme') || 'dark';
+        setTheme(cur==='dark' ? 'light' : 'dark')
+    }
+        if (cmd && e.key.toLowerCase()==='l'){
+        e.preventDefault();
+        input.value='';
+        analyze()
+    }
+        if (cmd && e.key.toLowerCase()==='s'){
+        e.preventDefault();
+        exportJSON()
+    }
+        if (cmd && e.key === 'Enter'){
+        e.preventDefault();
+        const start = input.selectionStart;
+        input.setRangeText('\n', start, start, 'end');
+        analyze()
+    }
     })
 
-        // ——— Init ———
-        (function init(){
-            const saved = localStorage.getItem('textAnalyzer.content')
-            if (saved) input.value = saved
-            const theme = localStorage.getItem('textAnalyzer.theme') || 'dark'
-            setTheme(theme)
-            analyze()
-            el('lastSaved').textContent = nowStr()
-        })()
+        // Init
+        const saved = localStorage.getItem('textAnalyzer.content')
+        if (saved) input.value = saved
+        const theme = localStorage.getItem('textAnalyzer.theme') || 'dark'
+        setTheme(theme)
+        analyze()
+        el('lastSaved').textContent = nowStr()
+    })
 </script>
 </body>
 </html>
