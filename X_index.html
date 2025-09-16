@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Textal — Analyze Character / Word / Line Counter</title>
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {--radius: 1.2rem}
+        html, body {font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"}
+        .brand-title { letter-spacing: .3px }
+        .textarea-wrap { position: relative }
+        textarea#input { resize: vertical; min-height: 220px; line-height: 1.5 }
+        .floating-tools { position: sticky; top: .75rem; z-index: 6 }
+        .stat-card { border-radius: var(--radius) }
+        .card-header { border-top-left-radius: var(--radius); border-top-right-radius: var(--radius) }
+        .kbd { border: 1px solid var(--bs-border-color); padding: .15rem .3rem; border-radius: .375rem; font-size: .875em }
+        .monosmall { font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace }
+        .fade-enter { animation: fadeIn .25s ease-out }
+        @keyframes fadeIn { from { opacity: .4; transform: translateY(3px) } to { opacity: 1; transform: translateY(0) } }
+        .shadow-soft { box-shadow: 0 10px 30px rgba(0,0,0,.15) }
+        .badge-min { font-weight: 600 }
+        .grid { display: grid; gap: .75rem }
+        @media (min-width: 768px){ .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
+        @media (min-width: 1200px){ .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) } }
+        .stat-value { font-size: clamp(1rem, 2.5vw, 1.6rem); font-weight: 700 }
+        .quick-tip { font-size: .9rem }
+        .list-freq li { display:flex; justify-content: space-between; gap: .75rem }
+        .list-freq code { opacity:.8 }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center gap-2 brand-title" href="#">
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary fw-bold" style="width:32px;height:32px">A</span>
+            <span>Textal - Ultimate text tool</span>
+            <span class="badge text-bg-secondary ms-2">Bootstrap</span>
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+            <div class="dropdown me-1">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Theme</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><button class="dropdown-item" data-color-mode="dark">Dark</button></li>
+                    <li><button class="dropdown-item" data-color-mode="light">Light</button></li>
+                    <li><button class="dropdown-item" data-color-mode="auto">Auto</button></li>
+                </ul>
+            </div>
+            <a class="btn btn-sm btn-primary" id="exportBtn" href="#">Export</a>
+        </div>
+    </div>
+</nav>
+
+<main class="container py-4">
+    <div class="row g-4">
+        <aside class="col-lg-4 col-xl-3 order-lg-2">
+            <div class="floating-tools">
+                <div class="card shadow-soft stat-card mb-3 fade-enter">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span class="fw-semibold">Live Stats</span>
+                        <span class="badge rounded-pill text-bg-info">Realtime</span>
+                    </div>
+                    <div class="card-body grid cols-3">
+                        <div><div class="text-secondary">Chars</div><div class="stat-value monosmall" id="chars">0</div></div>
+                        <div><div class="text-secondary">Words</div><div class="stat-value monosmall" id="words">0</div></div>
+                        <div><div class="text-secondary">Lines</div><div class="stat-value monosmall" id="lines">0</div></div>
+                        <div><div class="text-secondary">Graphemes</div><div class="stat-value monosmall" id="graphemes">0</div></div>
+                        <div><div class="text-secondary">Sentences</div><div class="stat-value monosmall" id="sentences">0</div></div>
+                        <div><div class="text-secondary">Paragraphs</div><div class="stat-value monosmall" id="paragraphs">0</div></div>
+                        <div><div class="text-secondary">Avg word</div><div class="stat-value monosmall" id="avgWordLen">0</div></div>
+                        <div><div class="text-secondary">Longest</div><div class="stat-value monosmall" id="longestWord">–</div></div>
+                        <div><div class="text-secondary">Unique</div><div class="stat-value monosmall" id="uniqueWords">0</div></div>
+                        <div><div class="text-secondary">Reading time</div><div class="stat-value monosmall" id="readTime">0s</div></div>
+                        <div><div class="text-secondary">Byte size</div><div class="stat-value monosmall" id="byteSize">0 B</div></div>
+                        <div><div class="text-secondary">Whitespace</div><div class="stat-value monosmall" id="whitespace">0</div></div>
+                    </div>
+                </div>
+
+                <div class="card shadow-soft stat-card mb-3 fade-enter">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span class="fw-semibold">Character Classes</span>
+                        <span class="badge text-bg-secondary">Breakdown</span>
+                    </div>
+                    <div class="card-body grid cols-4">
+                        <div><div class="text-secondary">Letters</div><div class="stat-value monosmall" id="letters">0</div></div>
+                        <div><div class="text-secondary">Digits</div><div class="stat-value monosmall" id="digits">0</div></div>
+                        <div><div class="text-secondary">Punct.</div><div class="stat-value monosmall" id="punct">0</div></div>
+                        <div><div class="text-secondary">Symbols</div><div class="stat-value monosmall" id="symbols">0</div></div>
+                        <div><div class="text-secondary">Spaces</div><div class="stat-value monosmall" id="spaces">0</div></div>
+                        <div><div class="text-secondary">Tabs</div><div class="stat-value monosmall" id="tabs">0</div></div>
+                        <div><div class="text-secondary">Newlines</div><div class="stat-value monosmall" id="newlines">0</div></div>
+                        <div><div class="text-secondary">ASCII</div><div class="stat-value monosmall" id="ascii">0</div></div>
+                    </div>
+                </div>
+
+                <div class="card shadow-soft stat-card fade-enter">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span class="fw-semibold">Top Words</span>
+                        <span class="badge text-bg-warning">Frequency</span>
+                    </div>
+                    <div class="card-body">
+                        <ol class="list-unstyled list-freq small" id="freqList" aria-live="polite"></ol>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <section class="col-lg-8 col-xl-9 order-lg-1">
+            <div class="card shadow-soft stat-card">
+                <div class="card-header d-flex flex-wrap align-items-center gap-2">
+                    <span class="fw-semibold">Your Text</span>
+                    <span class="ms-auto d-flex align-items-center gap-2">
+              <span class="text-secondary quick-tip d-none d-md-inline">Tips: <span class="kbd">Ctrl/Cmd + Enter</span> inserts newline · <span class="kbd">Ctrl/Cmd + B</span> toggles theme</span>
+              <button class="btn btn-sm btn-outline-secondary" id="sampleBtn">Sample</button>
+              <button class="btn btn-sm btn-outline-secondary" id="clearBtn">Clear</button>
+              <label class="btn btn-sm btn-outline-secondary mb-0">
+                Import <input id="fileInput" type="file" accept=".txt,.md,.csv,.json" hidden>
+              </label>
+              <button class="btn btn-sm btn-primary" id="copyBtn">Copy Text</button>
+            </span>
+                </div>
+                <div class="card-body textarea-wrap">
+                    <textarea id="input" spellcheck="false" class="form-control" placeholder="Paste or start typing…"></textarea>
+                    <div class="d-flex justify-content-between mt-2 small text-secondary">
+                        <div>
+                            <span class="me-3">Language guess: <span class="badge rounded-pill text-bg-secondary" id="langGuess">n/a</span></span>
+                            <span class="me-3">Encoding: <span class="badge rounded-pill text-bg-secondary" id="encoding">UTF‑8</span></span>
+                            <span>Last saved: <span class="monosmall" id="lastSaved">—</span></span>
+                        </div>
+                        <div class="monosmall" id="cursorPos">Ln 1, Col 1</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-3">
+                <div class="col-12 col-xl-6">
+                    <div class="card stat-card h-100 shadow-soft">
+                        <div class="card-header fw-semibold">Details</div>
+                        <div class="card-body">
+                            <dl class="row mb-0 small">
+                                <dt class="col-sm-5">Trimmed characters</dt><dd class="col-sm-7 monosmall" id="trimmedChars">0</dd>
+                                <dt class="col-sm-5">Non-whitespace characters</dt><dd class="col-sm-7 monosmall" id="nonWsChars">0</dd>
+                                <dt class="col-sm-5">Average line length</dt><dd class="col-sm-7 monosmall" id="avgLineLen">0</dd>
+                                <dt class="col-sm-5">Median word length</dt><dd class="col-sm-7 monosmall" id="medianWordLen">0</dd>
+                                <dt class="col-sm-5">Longest line length</dt><dd class="col-sm-7 monosmall" id="longestLine">0</dd>
+                                <dt class="col-sm-5">Shortest line length</dt><dd class="col-sm-7 monosmall" id="shortestLine">0</dd>
+                                <dt class="col-sm-5">Estimated syllables</dt><dd class="col-sm-7 monosmall" id="syllables">0</dd>
+                                <dt class="col-sm-5">Flesch Reading Ease*</dt><dd class="col-sm-7 monosmall" id="flesch">–</dd>
+                            </dl>
+                            <p class="text-secondary small mt-2 mb-0">*English heuristic. For non-English text this may be meaningless.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-6">
+                    <div class="card stat-card h-100 shadow-soft">
+                        <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+                            <span>Word Length Distribution</span>
+                            <div>
+                                <button class="btn btn-sm btn-outline-secondary" id="csvBtn">Download CSV</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="progress" role="progressbar" aria-label="Word length distribution">
+                                <!-- bars injected here -->
+                            </div>
+                            <ul class="list-inline small mt-3 mb-0" id="wordLenLegend"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-3" role="alert">
+                <strong>Privacy:</strong> All processing is done locally in your browser. Nothing is uploaded.
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer class="container py-4 text-center text-secondary small">
+    Built with <span class="text-danger">♥</span> on Bootstrap. Keyboard: <span class="kbd">Ctrl/Cmd + B</span> theme · <span class="kbd">Ctrl/Cmd + L</span> clear · <span class="kbd">Ctrl/Cmd + S</span> export.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // ——— Utilities ———
+        const el = id => document.getElementById(id)
+        const fmt = n => new Intl.NumberFormat().format(n)
+        const nowStr = () => new Date().toLocaleString()
+
+        // Unicode-aware word split (letters/numbers + internal apostrophes/hyphens)
+        const WORD_RE = /[\p{L}\p{N}]+(?:[\-''][\p{L}\p{N}]+)*/gu
+        const LETTER_RE = /\p{L}/gu
+        const DIGIT_RE = /\p{N}/gu
+        const PUNCT_RE = /\p{P}/gu
+        const SYMBOL_RE = /\p{S}/gu
+
+        function graphemesOf(str){
+        if (typeof Intl !== 'undefined' && Intl.Segmenter){
+        const seg = new Intl.Segmenter(undefined, {granularity:'grapheme'})
+        return Array.from(seg.segment(str), s => s.segment)
+    }
+        // basic fallback (may split some complex emoji):
+        return Array.from(str)
+    }
+
+        function sentencesOf(str){
+        // Heuristic sentence splitter; avoids splitting on common abbreviations
+        const abbr = /(e\.g\.|i\.e\.|mr\.|mrs\.|dr\.|vs\.|etc\.|u\.s\.)/i
+        return str
+        .replace(/([?!\.]+)(\s+)(?=[A-ZА-ЯЁÑÖÜÍÁÉÍÓÚÄÔİ])(?!(?:[^]*?\()))/g, '$1\n')
+        .split(/\n+/)
+        .map(s => s.trim())
+        .filter(s => s.length && !abbr.test(s))
+    }
+
+        function paragraphsOf(str){
+        return str.split(/\n{2,}/).map(p => p.trim()).filter(Boolean)
+    }
+
+        function median(arr){
+        if(!arr.length) return 0
+        const s = [...arr].sort((a,b)=>a-b)
+        const mid = Math.floor(s.length/2)
+        return s.length % 2 ? s[mid] : (s[mid-1]+s[mid])/2
+    }
+
+        function syllableEstimate(word){
+        // Very rough English heuristic for syllables (for Flesch score)
+        if(!word) return 0
+        const w = word.toLowerCase()
+        const m = w.replace(/e$/,'').match(/[aeiouy]+/g)
+        return Math.max(1, m ? m.length : 0)
+    }
+
+        function detectLanguageLite(text){
+        // Simple guess: look at script usage
+        const scripts = {
+        Bengali: /[\u0980-\u09FF]/,
+        Latin: /[A-Za-z]/,
+        Cyrillic: /[\u0400-\u04FF]/,
+        Arabic: /[\u0600-\u06FF]/,
+        Devanagari: /[\u0900-\u097F]/
+    }
+        for (const [name, re] of Object.entries(scripts)){
+        if (re.test(text)) return name
+    }
+        return text.trim() ? 'Unknown' : 'n/a'
+    }
+
+        function humanBytes(n){
+        if (n < 1024) return `${n} B`
+        const units = ['KB','MB','GB']
+        let u = -1
+        do { n = n/1024; u++ } while (n >= 1024 && u < units.length-1)
+        return `${n.toFixed(2)} ${units[u]}`
+    }
+
+        // ——— Main analyzer ———
+        const input = el('input')
+
+        function analyze(){
+        const text = input.value
+        const lines = text.split(/\n/)
+        const words = text.match(WORD_RE) || []
+        const wordLens = words.map(w => [...w].length)
+        const graphemes = graphemesOf(text)
+        const sentences = sentencesOf(text)
+        const paragraphs = paragraphsOf(text)
+
+        const letters = (text.match(LETTER_RE)||[]).length
+        const digits = (text.match(DIGIT_RE)||[]).length
+        const punct = (text.match(PUNCT_RE)||[]).length
+        const symbols = (text.match(SYMBOL_RE)||[]).length
+        const spaces = (text.match(/ /g)||[]).length
+        const tabs = (text.match(/\t/g)||[]).length
+        const newlines = lines.length - 1
+        const ascii = (text.match(/[\x00-\x7F]/g)||[]).length
+        const nonWs = (text.replace(/\s/g,'').length)
+
+        const longestWord = words.reduce((a,b)=> b.length>a.length?b:a, '')
+        const avgWordLen = words.length ? (wordLens.reduce((a,b)=>a+b,0)/words.length) : 0
+        const medWordLen = median(wordLens)
+
+        const lineLens = lines.map(l => l.length)
+        const avgLineLen = lines.length ? (lineLens.reduce((a,b)=>a+b,0)/lines.length) : 0
+        const longestLine = Math.max(0, ...lineLens)
+        const shortestLine = lines.length ? Math.min(...lineLens) : 0
+
+        const byteSize = new Blob([text]).size
+        const readTimeSeconds = Math.round((words.length / 200) * 60)
+
+        // Frequency (top 10)
+        const freq = new Map()
+        for(const w of words){
+        const key = w.toLowerCase()
+        freq.set(key, (freq.get(key)||0)+1)
+    }
+        const top = [...freq.entries()].sort((a,b)=> b[1]-a[1]).slice(0,10)
+
+        // Syllables + Flesch (English heuristic)
+        const syllables = words.reduce((sum, w)=> sum + syllableEstimate(w), 0)
+        const sentCount = Math.max(1, sentences.length) // avoid div/0
+        const flesch = words.length && sentences.length
+        ? (206.835 - 1.015 * (words.length / sentCount) - 84.6 * (syllables / words.length))
+        : null
+
+        // Update UI
+        el('chars').textContent = fmt(text.length)
+        el('words').textContent = fmt(words.length)
+        el('lines').textContent = fmt(lines.length)
+        el('graphemes').textContent = fmt(graphemes.length)
+        el('sentences').textContent = fmt(sentences.length)
+        el('paragraphs').textContent = fmt(paragraphs.length)
+        el('avgWordLen').textContent = words.length ? (avgWordLen.toFixed(2)) : '0'
+        el('medianWordLen').textContent = medWordLen.toString()
+        el('longestWord').textContent = longestWord || '–'
+        el('uniqueWords').textContent = fmt(freq.size)
+        el('readTime').textContent = readTimeSeconds ? (readTimeSeconds<60 ? `${readTimeSeconds}s` : `${(readTimeSeconds/60).toFixed(1)} min`) : '0s'
+        el('byteSize').textContent = humanBytes(byteSize)
+        el('whitespace').textContent = fmt(text.length - nonWs)
+
+        el('letters').textContent = fmt(letters)
+        el('digits').textContent = fmt(digits)
+        el('punct').textContent = fmt(punct)
+        el('symbols').textContent = fmt(symbols)
+        el('spaces').textContent = fmt(spaces)
+        el('tabs').textContent = fmt(tabs)
+        el('newlines').textContent = fmt(newlines)
+        el('ascii').textContent = fmt(ascii)
+
+        el('trimmedChars').textContent = fmt(text.trim().length)
+        el('nonWsChars').textContent = fmt(nonWs)
+        el('avgLineLen').textContent = lines.length ? avgLineLen.toFixed(2) : '0'
+        el('longestLine').textContent = fmt(longestLine)
+        el('shortestLine').textContent = fmt(shortestLine)
+        el('syllables').textContent = fmt(syllables)
+        el('flesch').textContent = (flesch===null? '–' : flesch.toFixed(1))
+
+        // Frequency list
+        const list = el('freqList')
+        list.innerHTML = ''
+        top.forEach(([w,c])=>{
+        const li = document.createElement('li')
+        li.innerHTML = `<code>${w}</code><span class="badge text-bg-secondary badge-min">${fmt(c)}</span>`
+        list.appendChild(li)
+    })
+
+        // Word length distribution as stacked progress
+        const dist = {}
+        for (const len of wordLens){ dist[len] = (dist[len]||0)+1 }
+        const entries = Object.entries(dist).sort((a,b)=> Number(a[0])-Number(b[0]))
+        const total = wordLens.length || 1
+        const progress = document.querySelector('.progress')
+        progress.innerHTML = ''
+        const legend = el('wordLenLegend')
+        legend.innerHTML = ''
+        entries.forEach(([len,count], idx)=>{
+        const pct = Math.max(0.5, (count/total)*100)
+        const div = document.createElement('div')
+        div.className = `progress-bar bg-${idx % 6 === 0 ? 'primary' :
+        idx % 6 === 1 ? 'success' :
+        idx % 6 === 2 ? 'info' :
+        idx % 6 === 3 ? 'warning' :
+        idx % 6 === 4 ? 'danger' : 'secondary'}`
+        div.style.width = pct + '%'
+        div.title = `${count} words of length ${len}`
+        progress.appendChild(div)
+        const li = document.createElement('li')
+        li.className = 'list-inline-item monosmall'
+        li.textContent = `${len}: ${fmt(count)}`
+        legend.appendChild(li)
+    })
+
+        // Language guess
+        el('langGuess').textContent = detectLanguageLite(text)
+
+        // Persist
+        localStorage.setItem('textAnalyzer.content', text)
+        el('lastSaved').textContent = nowStr()
+
+        // Cursor position
+        updateCursorPos()
+    }
+
+        function updateCursorPos(){
+        const pos = input.selectionStart || 0
+        const till = input.value.slice(0, pos)
+        const line = (till.match(/\n/g)||[]).length + 1
+        const col = pos - till.lastIndexOf('\n')
+        el('cursorPos').textContent = `Ln ${line}, Col ${col}`
+    }
+
+        // ——— Actions & Keyboard ———
+        function copyToClipboard(){
+        input.select()
+        navigator.clipboard.writeText(input.value).then(() => {
+        flash('Copied to clipboard')
+    }).catch(() => {
+        // Fallback for older browsers
+        document.execCommand('copy')
+        flash('Copied to clipboard')
+    })
+        window.getSelection().removeAllRanges()
+    }
+
+        function flash(msg){
+        const toast = document.createElement('div')
+        toast.className = 'toast align-items-center text-bg-success border-0 position-fixed top-0 start-50 translate-middle-x mt-3 z-3'
+        toast.setAttribute('role', 'alert')
+        toast.innerHTML = `<div class="d-flex"><div class="toast-body">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`
+        document.body.appendChild(toast)
+        const t = new bootstrap.Toast(toast, { delay: 1500 })
+        t.show()
+        toast.addEventListener('hidden.bs.toast', ()=> toast.remove())
+    }
+
+        function exportJSON(){
+        const data = collectAll()
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'})
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'text-analysis.json'
+        a.click()
+        URL.revokeObjectURL(url)
+    }
+
+        function csvFromObjectArray(rows){
+        if (!rows.length) return ''
+        const keys = Object.keys(rows[0])
+        const esc = v => '"'+String(v).replace(/"/g,'""')+'"'
+        return [keys.join(','), ...rows.map(r=> keys.map(k=>esc(r[k])).join(','))].join('\n')
+    }
+
+        function downloadWordLenCSV(){
+        const text = input.value
+        const words = text.match(WORD_RE) || []
+        const wordLens = words.map(w => [...w].length)
+        const dist = {}
+        for (const len of wordLens){ dist[len] = (dist[len]||0)+1 }
+        const rows = Object.entries(dist).sort((a,b)=>a[0]-b[0]).map(([len,count])=>({length: len, count}))
+        const csv = csvFromObjectArray(rows)
+        const blob = new Blob([csv], {type:'text/csv'})
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url; a.download = 'word-length-distribution.csv'; a.click(); URL.revokeObjectURL(url)
+    }
+
+        function collectAll(){
+        const text = input.value
+        const lines = text.split(/\n/)
+        const words = text.match(WORD_RE) || []
+        const graphemes = graphemesOf(text)
+        return {
+        chars: text.length,
+        words: words.length,
+        lines: lines.length,
+        graphemes: graphemes.length,
+        sentences: sentencesOf(text).length,
+        paragraphs: paragraphsOf(text).length,
+        byteSize: new Blob([text]).size,
+        letters: (text.match(LETTER_RE)||[]).length,
+        digits: (text.match(DIGIT_RE)||[]).length,
+        punctuation: (text.match(PUNCT_RE)||[]).length,
+        symbols: (text.match(SYMBOL_RE)||[]).length,
+        spaces: (text.match(/ /g)||[]).length,
+        tabs: (text.match(/\t/g)||[]).length,
+        newlines: lines.length-1,
+        ascii: (text.match(/[\x00-\x7F]/g)||[]).length,
+        languageGuess: detectLanguageLite(text),
+        sample: text.slice(0, 120)
+    }
+    }
+
+        function importFile(file){
+        const reader = new FileReader()
+        reader.onload = e => {
+        input.value = e.target.result;
+        analyze();
+        flash('File imported')
+    }
+        reader.readAsText(file)
+    }
+
+        // ——— Theme ———
+        function setTheme(mode){
+        document.documentElement.setAttribute('data-bs-theme', mode === 'auto' ?
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : mode)
+        localStorage.setItem('textAnalyzer.theme', mode)
+    }
+
+        // ——— Event wiring ———
+        window.addEventListener('DOMContentLoaded', () => {
+        input.addEventListener('input', analyze)
+        input.addEventListener('keyup', updateCursorPos)
+        input.addEventListener('click', updateCursorPos)
+
+        el('clearBtn').addEventListener('click', ()=>{
+        input.value = '';
+        analyze();
+        flash('Cleared')
+    })
+
+        el('copyBtn').addEventListener('click', copyToClipboard)
+
+        el('sampleBtn').addEventListener('click', ()=>{
+        input.value = `Bootstrap-powered, privacy-friendly text analyzer.\n\n• Counts: characters, words, lines, sentences, paragraphs, graphemes (emoji-safe).\n• Breakdown: letters, digits, punctuation, symbols, spaces, tabs, newlines, ASCII.\n• Extras: reading time, byte size, averages, medians, word-length distribution, top words.\n\nবাংলা, العربية, русский — mixed scripts supported (basic heuristics).`
+        analyze()
+    })
+
+        el('csvBtn').addEventListener('click', downloadWordLenCSV)
+        el('exportBtn').addEventListener('click', exportJSON)
+
+        el('fileInput').addEventListener('change', (e)=>{
+        const [file] = e.target.files
+        if(file) importFile(file)
+        e.target.value = ''
+    })
+
+        document.querySelectorAll('[data-color-mode]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+        setTheme(btn.getAttribute('data-color-mode'))
+    })
+    })
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e)=>{
+        const cmd = e.ctrlKey || e.metaKey
+        if (cmd && e.key.toLowerCase()==='b'){
+        e.preventDefault();
+        const cur = localStorage.getItem('textAnalyzer.theme') || 'dark';
+        setTheme(cur==='dark' ? 'light' : 'dark')
+    }
+        if (cmd && e.key.toLowerCase()==='l'){
+        e.preventDefault();
+        input.value='';
+        analyze()
+    }
+        if (cmd && e.key.toLowerCase()==='s'){
+        e.preventDefault();
+        exportJSON()
+    }
+        if (cmd && e.key === 'Enter'){
+        e.preventDefault();
+        const start = input.selectionStart;
+        input.setRangeText('\n', start, start, 'end');
+        analyze()
+    }
+    })
+
+        // Init
+        const saved = localStorage.getItem('textAnalyzer.content')
+        if (saved) input.value = saved
+        const theme = localStorage.getItem('textAnalyzer.theme') || 'dark'
+        setTheme(theme)
+        analyze()
+        el('lastSaved').textContent = nowStr()
+    })
+</script>
+</body>
+</html>
