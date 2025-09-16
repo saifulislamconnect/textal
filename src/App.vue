@@ -153,7 +153,7 @@
     </main>
 
     <footer class="container py-4 text-center text-secondary small">
-      Built with <span class="text-danger">♥</span> with vite & bootstrap by Saiful Islam. Keyboard: <span class="kbd">Ctrl/Cmd + B</span> theme · <span class="kbd">Ctrl/Cmd + L</span> clear · <span class="kbd">Ctrl/Cmd + S</span> export.
+      Built with <span class="text-danger">♥</span> with vite & bootstrap by <a href="https://github.com/saifulislamconnect">Saiful Islam</a>. Keyboard: <span class="kbd">Ctrl/Cmd + B</span> theme · <span class="kbd">Ctrl/Cmd + L</span> clear · <span class="kbd">Ctrl/Cmd + S</span> export.
     </footer>
   </div>
 </template>
